@@ -12,14 +12,15 @@ export function bytesFromHandle (handle) {
 // Offset hashes for IXI Oyster.findGeneratedSignatures
 // Pass genesisHash, absolute offset (0 = first file chunk)
 // Alternatively pass last hash, relative offset, to save cycles
-export function offsetHash (hash, offset) {
+export function offsetHash (hashString, offset) {
   let obfuscatedHash
+  let hash = new Forge.util.ByteBuffer(hashString, 'hex')
 
   do {
     [obfuscatedHash, hash] = hashChain(hash)
   } while(offset-- > 0)
 
-  return hash
+  return hash.toHex()
 }
 
 export function parseMessage (message) {
@@ -61,7 +62,7 @@ export function queryGeneratedSignatures (iotaProvider, hash, count) {
 }
 
 // Encryption to trytes
-export function encrypt(key, binaryString) {
+export function encrypt(key, byteBuffer) {
   key.read = 0
   const iv = Forge.random.getBytesSync(16)
   const cipher = Forge.cipher.createCipher('AES-GCM', key)
@@ -72,21 +73,21 @@ export function encrypt(key, binaryString) {
     tagLength: 128
   })
 
-  cipher.update(binaryString)
+  cipher.update(byteBuffer)
   cipher.finish()
 
   const ivTrytes = iota.utils.toTrytes(iv)
-  const trytes = iota.utils.toTrytes(cipher.output.getBytes())
+  const trytes = iota.utils.toTrytes(cipher.output.bytes())
 
   return trytes + ivTrytes
 }
 
 export function encryptString(key, string, encoding) {
-  return encrypt(key, Forge.util.createBuffer(string, encoding || 'utf8'))
+  return encrypt(key, new Forge.util.ByteBuffer(string, encoding || 'utf8'))
 }
 
 export function encryptBytes (key, bytes) {
-  return encrypt(key, Forge.util.createBuffer(bytes))
+  return encrypt(key, new Forge.util.ByteBuffer(bytes, 'raw'))
 }
 
 // Decryption from trytes
@@ -102,14 +103,14 @@ export function decrypt (key, trytes) {
     additionalData: 'binary-encoded string',
     tagLength: 0
   })
-  decipher.update(Forge.util.createBuffer(encrypted), 'binary')
+  decipher.update(new Forge.util.ByteBuffer(encrypted), 'binary')
   const pass = decipher.finish()
 
   return decipher.output
 }
 
 export function decryptBytes (key, trytes) {
-  return Forge.util.binary.raw.decode(decrypt(key, trytes).getBytes())
+  return Forge.util.binary.raw.decode(decrypt(key, trytes).bytes())
 }
 
 export function decryptString (key, trytes, encoding) {

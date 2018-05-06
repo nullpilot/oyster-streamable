@@ -11,19 +11,21 @@ export function getPrimordialHash () {
   return Forge.md.sha256.create().update(bytes).digest().toHex()
 }
 
+// Expects node-forge ByteBuffer
 // Returns [obfuscatedHash, nextHash]
 export function hashChain (hash) {
-  const obfuscatedHash = Forge.md.sha384.create().update(hash).digest().toHex()
-  const nextHash = Forge.md.sha256.create().update(hash).digest().toHex()
+  const obfuscatedHash = Forge.md.sha384.create().update(hash).digest()
+  const nextHash = Forge.md.sha256.create().update(hash).digest()
 
   return [obfuscatedHash, nextHash]
 }
 
 // Genesis hash is not yet obfuscated.
 export function genesisHash (handle) {
-  const [_obfuscatedHash, genHash] = hashChain(handle);
+  const bytes = new Forge.util.ByteBuffer(handle, 'utf8')
+  const [_obfuscatedHash, genHash] = hashChain(bytes);
 
-  return genHash;
+  return genHash.toHex();
 }
 
 // Moved to Encryption utility

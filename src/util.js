@@ -17,7 +17,7 @@ export function offsetHash (hashString, offset) {
   let hash = new Forge.util.ByteBuffer(hashString, 'hex')
 
   do {
-    [obfuscatedHash, hash] = hashChain(hash)
+    [obfuscatedHash, hash] = hashChain(hash.bytes())
   } while(offset-- > 0)
 
   return hash.toHex()
